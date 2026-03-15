@@ -1,0 +1,188 @@
+const logger = require('./logger');
+
+class Poller {
+  constructor(onPRChange) {
+    this.onPRChange = onPRChange;
+    this.siteUrl = '';
+    this.interval = 5;
+    this.timer = null;
+    this.lastPRData = null;
+    this.lastKnownTimestamp = null;
+    this.mainWindow = null;
+  }
+
+  setMainWindow(win) {
+    this.mainWindow = win;
+  }
+
+  configure(siteUrl, intervalSeconds) {
+    const changed = this.siteUrl !== siteUrl || this.interval !== intervalSeconds;
+    this.siteUrl = siteUrl;
+    this.interval = intervalSeconds;
+
+    if (changed && this.timer) {
+      this.stop();
+      this.start();
+    }
+  }
+
+  start() {
+    console.log('[Poller] start() called, siteUrl:', this.siteUrl);
+    if (!this.siteUrl) {
+      logger.addEntry('error', 'Site URL not configured — polling disabled');
+      this.notifyStatus('No site URL configured');
+      console.log('[Poller] No site URL configured, aborting');
+      return;
+    }
+
+    console.log('[Poller] Starting polling every', this.interval, 'seconds');
+    logger.addEntry('connection', `Polling ${this.siteUrl} every ${this.interval}s`);
+    this.notifyStatus('Polling...');
+    this.poll();
+    this.timer = setInterval(() => this.poll(), this.interval * 1000);
+  }
+
+  stop() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+
+  async poll() {
+    console.log('[Poller] poll() called');
+    if (!this.siteUrl) {
+      console.log('[Poller] No siteUrl, skipping poll');
+      return;
+    }
+
+    try {
+      // 1. Check if the database has updated by getting the latest timestamp
+      const timestampUrl = `${this.siteUrl.replace(/\/+$/, '')}/api/roster-last-updated`;
+      const tsRes = await fetch(timestampUrl);
+      
+      if (!tsRes.ok) {
+        logger.addEntry('error', `API returned ${tsRes.status}: ${tsRes.statusText}`);
+        this.notifyStatus(`Error: ${tsRes.status}`);
+        return;
+      }
+      
+      const tsData = await tsRes.json();
+      
+      // If the timestamp hasn't changed, we can exit early!
+      if (this.lastKnownTimestamp === tsData.last_updated && tsData.last_updated !== null) {
+          // No changes yet, no need to download the full roster
+          return;
+      }
+      
+      const newTimestamp = tsData.last_updated;
+
+      // 2. Actually fetch the roster since it has changed
+      const url = `${this.siteUrl.replace(/\/+$/, '')}/api/roster`;
+      console.log('[Poller] Data changed, fetching full roster PRs:', url);
+
+      const res = await fetch(url);
+      console.log('[Poller] API response status:', res.status);
+
+      if (!res.ok) {
+        logger.addEntry('error', `API returned ${res.status}: ${res.statusText}`);
+        this.notifyStatus(`Error: ${res.status}`);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!data.roster || !Array.isArray(data.roster)) {
+        logger.addEntry('error', 'Invalid roster response from API');
+        return;
+      }
+      
+      // Successfully downloaded the new data, update our timestamp tracker
+      this.lastKnownTimestamp = newTimestamp;
+
+      // Calculate PR values
+      const prData = {};
+      for (const c of data.roster) {
+        if (!c.name || !c.realm) continue;
+        const ep = c.ep ?? 0;
+        const gp = c.gp ?? 0;
+        if (gp <= 0) continue;
+        const pr = parseFloat((ep / gp).toFixed(2));
+        const key = `${c.name}-${c.realm}`.toLowerCase();
+        prData[key] = pr;
+      }
+
+      // Check if PR values changed
+      const changes = this.detectChanges(prData);
+      if (changes.length > 0) {
+        const count = changes.length;
+        const msg = `PR values changed for ${count} character${count === 1 ? '' : 's'}`;
+        // Debug: log which characters changed
+        const changedNames = changes.map(c => c.name).join(', ');
+        console.log(`[DI Monitor] Detected changes: ${changedNames}`);
+        logger.addEntry('received', msg, { changes });
+        this.lastPRData = prData;
+        this.onPRChange(prData);
+      } else {
+        // No changes detected
+        console.log('[DI Monitor] No changes detected in PR values');
+      }
+
+      this.notifyStatus('Connected');
+    } catch (err) {
+      logger.addEntry('error', `Poll failed: ${err.message}`);
+      this.notifyStatus(`Error: ${err.message}`);
+    }
+  }
+
+  detectChanges(newData) {
+    if (!this.lastPRData) {
+      // First poll - return all characters as "new"
+      return Object.entries(newData).map(([name, pr]) => ({
+        name,
+        oldPr: null,
+        newPr: pr,
+        isNew: true
+      }));
+    }
+
+    const changes = [];
+    const TOLERANCE = 0.001; // Allow for floating point precision
+
+    // Check for changed or new characters
+    for (const [name, newPr] of Object.entries(newData)) {
+      const oldPr = this.lastPRData[name];
+      if (oldPr === undefined) {
+        changes.push({ name, oldPr: null, newPr, isNew: true });
+      } else if (Math.abs(oldPr - newPr) > TOLERANCE) {
+        changes.push({ name, oldPr, newPr, isNew: false });
+      }
+    }
+
+    return changes;
+  }
+
+  hasChanged(newData) {
+    if (!this.lastPRData) return true;
+
+    const oldKeys = Object.keys(this.lastPRData).sort();
+    const newKeys = Object.keys(newData).sort();
+
+    if (oldKeys.length !== newKeys.length) return true;
+
+    for (let i = 0; i < newKeys.length; i++) {
+      if (oldKeys[i] !== newKeys[i]) return true;
+      if (this.lastPRData[oldKeys[i]] !== newData[newKeys[i]]) return true;
+    }
+
+    return false;
+  }
+
+  notifyStatus(status) {
+    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      this.mainWindow.webContents.send('poll-status', status);
+    }
+  }
+}
+
+module.exports = Poller;

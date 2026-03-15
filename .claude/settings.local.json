@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "Bash(npm install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm run:*)",
+      "Bash(\"/c/Users/Yajinni/Documents/Coding Projects/DI:*)",
+      "Bash(node \"/c/Users/Yajinni/Documents/Coding Projects/DI Monitor/create-icon.js\")",
+      "Bash(npm list:*)",
+      "Bash(rm -rf \"$HOME/AppData/Local/electron-builder/Cache\")",
+      "Bash(CSC_IDENTITY_AUTO_DISCOVERY=false npm run build)",
+      "Bash(WIN_CSC_LINK=\"\" WIN_CSC_KEY_PASSWORD=\"\" npm run build)",
+      "Bash(unset WIN_CSC_LINK)",
+      "Bash(unset WIN_CSC_KEY_PASSWORD)",
+      "Bash(__NEW_LINE_00bc1b582a9380ce__ cd:*)",
+      "Bash(timeout 5 npm start)",
+      "Bash(powershell -Command \"Get-Content ''C:\\\\Program Files \\(x86\\)\\\\World of Warcraft\\\\_retail_\\\\WTF\\\\Account\\\\51446847#1\\\\SavedVariables\\\\DI_To_RCL_Import.lua''\")",
+      "Bash(powershell -Command \"Set-Content -Path ''C:\\\\Program Files \\(x86\\)\\\\World of Warcraft\\\\_retail_\\\\WTF\\\\Account\\\\51446847#1\\\\SavedVariables\\\\DI_To_RCL_Import.lua'' -Value ''DI_RCL_DB = { [\"\"test-marker\"\"] = 999 }'' -Encoding UTF8\")",
+      "Bash(powershell.exe -NoProfile -Command \"Start-Process notepad ''C:\\\\Program Files \\(x86\\)\\\\World of Warcraft\\\\_retail_\\\\WTF\\\\Account\\\\51446847#1\\\\SavedVariables\\\\DI_To_RCL_Import.lua''\")",
+      "Bash(powershell.exe -NoProfile -Command \"Get-ItemProperty ''C:\\\\Program Files \\(x86\\)\\\\World of Warcraft\\\\_retail_\\\\WTF\\\\Account\\\\51446847#1\\\\SavedVariables\\\\DI_To_RCL_Import.lua'' | Select-Object Attributes, IsReadOnly, LastWriteTime\")",
+      "Bash(powershell.exe -NoProfile -Command \"Get-Process | Where-Object { $_.Path -like ''*Wow*'' -or $_.Path -like ''*Battle*'' -or $_.Path -like ''*Agent*'' } | Select-Object Name, Id, Path\")"
+    ]
+  }
+}

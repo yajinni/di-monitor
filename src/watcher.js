@@ -299,5 +299,6 @@ class Watcher {
     }
     return result;
   }
+}
 
 module.exports = Watcher;

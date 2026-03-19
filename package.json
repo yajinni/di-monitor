@@ -1,6 +1,6 @@
 {
   "name": "di-monitor",
-  "version": "2.6.0-beta",
+  "version": "2.6.1-beta",
   "description": "System tray app that receives PR values from Loot Manager and updates WoW addon SavedVariables",
   "main": "main.js",
   "scripts": {

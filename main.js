@@ -104,7 +104,7 @@ function createTray() {
   });
 }
 
-async function handlePRUpdate(prData) {
+async function handlePRUpdate(prData, lastSync) {
   console.log('[DI Monitor] handlePRUpdate called with', Object.keys(prData).length, 'characters');
 
   const filePath = getAddonFilePath();
@@ -128,9 +128,13 @@ async function handlePRUpdate(prData) {
   console.log('[DI Monitor] Addon folder exists, attempting write...');
 
   try {
-    await writeSavedVariables(filePath, prData);
+    await writeSavedVariables(filePath, prData, lastSync);
     const count = Object.keys(prData).length;
-    logger.addEntry('updated', `PR values updated for ${count} characters`);
+    let msg = `PR values updated for ${count} characters`;
+    if (lastSync) {
+      msg += ` (Manual Sync: ${new Date(lastSync).toLocaleTimeString()})`;
+    }
+    logger.addEntry('updated', msg);
     console.log('[DI Monitor] Write successful');
   } catch (err) {
     logger.addEntry('error', `Failed to write PR values: ${err.message}`);

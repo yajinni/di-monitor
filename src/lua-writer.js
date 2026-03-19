@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-function generateLua(prData) {
+function generateLua(prData, lastSync) {
   let lua = 'DI_RCL_PRVALUES = {\n';
 
   const keys = Object.keys(prData).sort();
@@ -10,11 +10,16 @@ function generateLua(prData) {
     lua += `\t["${key}"] = ${value},\n`;
   }
 
-  lua += '}\n';
+  lua += '}\n\n';
+  
+  if (lastSync) {
+    lua += `DI_RCL_LAST_SYNC = "${lastSync}"\n`;
+  }
+
   return lua;
 }
 
-async function writeSavedVariables(filePath, prData) {
+async function writeSavedVariables(filePath, prData, lastSync) {
   if (!filePath) {
     throw new Error('SavedVariables path not configured');
   }
@@ -24,7 +29,7 @@ async function writeSavedVariables(filePath, prData) {
     throw new Error(`Directory does not exist: ${dir}`);
   }
 
-  const luaContent = generateLua(prData);
+  const luaContent = generateLua(prData, lastSync);
   await fs.promises.writeFile(filePath, luaContent, 'utf8');
   console.log('[LuaWriter] Wrote', Object.keys(prData).length, 'PR values to', filePath);
 }

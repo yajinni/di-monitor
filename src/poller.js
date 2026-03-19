@@ -8,6 +8,7 @@ class Poller {
     this.timer = null;
     this.lastPRData = null;
     this.lastKnownTimestamp = null;
+    this.lastManualSync = null;
     this.mainWindow = null;
   }
 
@@ -100,6 +101,9 @@ class Poller {
       // Successfully downloaded the new data, update our timestamp tracker
       this.lastKnownTimestamp = newTimestamp;
 
+      // Extract manual sync timestamp if present
+      const lastSync = data.last_pr_sync || null;
+
       // Calculate PR values
       const prData = {};
       for (const c of data.roster) {
@@ -112,20 +116,25 @@ class Poller {
         prData[key] = pr;
       }
 
-      // Check if PR values changed
+      // Check if PR values changed OR if a manual sync was triggered
       const changes = this.detectChanges(prData);
-      if (changes.length > 0) {
-        const count = changes.length;
-        const msg = `PR values changed for ${count} character${count === 1 ? '' : 's'}`;
-        // Debug: log which characters changed
-        const changedNames = changes.map(c => c.name).join(', ');
-        console.log(`[DI Monitor] Detected changes: ${changedNames}`);
-        logger.addEntry('received', msg, { changes });
+      const isManualSync = lastSync && lastSync !== this.lastManualSync;
+      
+      if (changes.length > 0 || isManualSync) {
+        const count = Object.keys(prData).length;
+        console.log(`[DI Monitor] Data updated. Manual Sync: ${isManualSync}. Rows: ${count}`);
+        
+        if (changes.length > 0) {
+          const msg = `PR values changed for ${changes.length} character${changes.length === 1 ? '' : 's'}`;
+          logger.addEntry('received', msg, { changes });
+        }
+
         this.lastPRData = prData;
-        this.onPRChange(prData);
+        this.lastManualSync = lastSync;
+        this.onPRChange(prData, lastSync);
       } else {
         // No changes detected
-        console.log('[DI Monitor] No changes detected in PR values');
+        console.log('[DI Monitor] No changes detected in PR values or manual sync');
       }
 
       this.notifyStatus('Connected');

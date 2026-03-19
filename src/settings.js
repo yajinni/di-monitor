@@ -6,7 +6,8 @@ const store = new Store({
     runOnStartup: false,
     siteUrl: '',
     pollInterval: 5,
-    rclootcouncilPath: ''
+    rclootcouncilPath: '',
+    attendancePath: ''
   }
 });
 

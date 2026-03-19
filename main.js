@@ -4,6 +4,7 @@ const fs = require('fs');
 const settings = require('./src/settings');
 const Poller = require('./src/poller');
 const Watcher = require('./src/watcher');
+const AttendanceHandler = require('./src/attendance-handler');
 const { writeSavedVariables } = require('./src/lua-writer');
 const { isWowRunning } = require('./src/wow-detector');
 
@@ -14,6 +15,7 @@ let mainWindow = null;
 let tray = null;
 let poller = null;
 let watcher = null;
+let attendanceHandler = null;
 
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -167,7 +169,8 @@ function setupIPC() {
       runOnStartup: settings.get('runOnStartup'),
       siteUrl: settings.get('siteUrl'),
       pollInterval: settings.get('pollInterval'),
-      rclootcouncilPath: settings.get('rclootcouncilPath')
+      rclootcouncilPath: settings.get('rclootcouncilPath'),
+      attendancePath: settings.get('attendancePath')
     };
   });
 
@@ -188,6 +191,9 @@ function setupIPC() {
     if (newSettings.rclootcouncilPath !== undefined) {
       settings.set('rclootcouncilPath', newSettings.rclootcouncilPath);
     }
+    if (newSettings.attendancePath !== undefined) {
+      settings.set('attendancePath', newSettings.attendancePath);
+    }
 
     // Reconfigure poller with new settings
     if (poller) {
@@ -197,6 +203,10 @@ function setupIPC() {
     // Reconfigure watcher with new settings
     if (watcher) {
       watcher.configure(settings.get('rclootcouncilPath'), settings.get('siteUrl'));
+    }
+
+    if (attendanceHandler) {
+      attendanceHandler.configure(settings.get('attendancePath'), settings.get('siteUrl'));
     }
 
     return true;
@@ -245,6 +255,28 @@ function setupIPC() {
     return null;
   });
 
+  ipcMain.handle('select-attendance-file', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select DI_To_RCL_Import.lua SavedVariables file',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Lua Files', extensions: ['lua'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      const selected = result.filePaths[0];
+      const filename = path.basename(selected).toLowerCase();
+      
+      if (filename === 'di_to_rcl_import.lua') {
+        return { path: selected, valid: true };
+      }
+      return { path: selected, valid: false, error: 'Please select the specific file named "DI_To_RCL_Import.lua" (located in your Account/SavedVariables folder)' };
+    }
+    return null;
+  });
+
   ipcMain.handle('validate-addon', (event, wowPath) => {
     if (!wowPath) return { found: false };
     const addonDir = path.join(wowPath, '_retail_', 'Interface', 'AddOns', ADDON_NAME);
@@ -287,6 +319,16 @@ function startWatcher() {
   watcher.configure(rclPath, siteUrl);
 }
 
+function startAttendanceHandler() {
+  console.log('[Main] startAttendanceHandler() called');
+  attendanceHandler = new AttendanceHandler();
+  
+  const attendancePath = settings.get('attendancePath');
+  const siteUrl = settings.get('siteUrl');
+  
+  attendanceHandler.configure(attendancePath, siteUrl);
+}
+
 app.on('ready', () => {
   logger.init();
   setupIPC();
@@ -294,6 +336,7 @@ app.on('ready', () => {
   createWindow();
   startPoller();
   startWatcher();
+  startAttendanceHandler();
 
   app.setLoginItemSettings({
     openAtLogin: settings.get('runOnStartup')
@@ -308,4 +351,5 @@ app.on('before-quit', () => {
   app.isQuitting = true;
   if (poller) poller.stop();
   if (watcher) watcher.stop();
+  if (attendanceHandler) attendanceHandler.stop();
 });

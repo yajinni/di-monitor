@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('diMonitor', {
   getLogs: () => ipcRenderer.invoke('get-logs'),
   selectWowFolder: () => ipcRenderer.invoke('select-wow-folder'),
   selectRclFile: () => ipcRenderer.invoke('select-rcl-file'),
+  selectAttendanceFile: () => ipcRenderer.invoke('select-attendance-file'),
   validateAddon: (wowPath) => ipcRenderer.invoke('validate-addon', wowPath),
   openLogsFolder: () => ipcRenderer.invoke('open-logs-folder'),
   onLogUpdate: (callback) => {

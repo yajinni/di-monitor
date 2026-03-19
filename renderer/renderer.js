@@ -10,6 +10,9 @@ const addonStatus = document.getElementById('addonStatus');
 const rclPathInput = document.getElementById('rclPath');
 const browseRclBtn = document.getElementById('browseRclBtn');
 const rclPathError = document.getElementById('rclPathError');
+const attendancePathInput = document.getElementById('attendancePath');
+const browseAttendanceBtn = document.getElementById('browseAttendanceBtn');
+const attendancePathError = document.getElementById('attendancePathError');
 const openLogsBtn = document.getElementById('openLogsBtn');
 const runOnStartupCheckbox = document.getElementById('runOnStartup');
 const saveBtn = document.getElementById('saveBtn');
@@ -161,6 +164,7 @@ async function loadSettings() {
   pollIntervalInput.value = s.pollInterval || 5;
   wowPathInput.value = s.wowPath || '';
   rclPathInput.value = s.rclootcouncilPath || '';
+  attendancePathInput.value = s.attendancePath || '';
   runOnStartupCheckbox.checked = s.runOnStartup;
 
   if (s.wowPath) {
@@ -202,6 +206,22 @@ browseRclBtn.addEventListener('click', async () => {
   }
 });
 
+// Browse for Attendance file
+browseAttendanceBtn.addEventListener('click', async () => {
+  const result = await window.diMonitor.selectAttendanceFile();
+  if (!result) return;
+
+  if (result.valid) {
+    attendancePathInput.value = result.path;
+    attendancePathError.textContent = '';
+    attendancePathError.className = 'field-error';
+  } else {
+    attendancePathInput.value = result.path;
+    attendancePathError.textContent = result.error;
+    attendancePathError.className = 'field-error visible';
+  }
+});
+
 // Open logs folder
 openLogsBtn.addEventListener('click', () => {
   window.diMonitor.openLogsFolder();
@@ -214,6 +234,7 @@ saveBtn.addEventListener('click', async () => {
     runOnStartup: runOnStartupCheckbox.checked,
     siteUrl: siteUrlInput.value,
     rclootcouncilPath: rclPathInput.value,
+    attendancePath: attendancePathInput.value,
     pollInterval: parseInt(pollIntervalInput.value, 10) || 5
   });
 

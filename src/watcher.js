@@ -82,9 +82,9 @@ class Watcher {
 
     logger.addEntry('system', `Detected RCLootCouncil file change, waiting ${this.debounceMs / 1000}s...`);
 
-    // Set new timeout to trigger the sync/export after 10 seconds of no further changes
+    // Set new timeout to trigger the export after 10 seconds of no further changes
     this.timeoutId = setTimeout(async () => {
-      await this.triggerSync();
+      // await this.triggerSync(); // User requested to stop automated sync
       await this.exportLootDBToJSON();
     }, this.debounceMs);
   }
@@ -134,33 +134,50 @@ class Watcher {
   async exportLootDBToJSON() {
     if (!this.filePath || !fs.existsSync(this.filePath)) return;
 
+    logger.addEntry('system', 'Processing RCLootCouncil.lua for LootDB export...');
+
     try {
       const content = fs.readFileSync(this.filePath, 'utf8');
+      
+      logger.addEntry('system', 'Searching for lootDB table in Lua file...');
       
       // Look for the lootDB table. It's usually nested inside profiles.
       // We look for ["lootDB"] = { and match the balanced braces.
       const lootDBMatch = content.match(/\["lootDB"\]\s*=\s*\{/);
       if (!lootDBMatch) {
+        logger.addEntry('error', 'No lootDB table found in RCLootCouncil.lua');
         console.log('[Watcher] No lootDB found in RCLootCouncil.lua');
         return;
       }
+
+      logger.addEntry('system', 'LootDB table found, extracting content...');
 
       const startIndex = lootDBMatch.index + lootDBMatch[0].length - 1;
       const lootDataRaw = this.extractBalancedBraces(content, startIndex);
       
       if (!lootDataRaw) {
+        logger.addEntry('error', 'Failed to extract balanced table content for lootDB');
         console.log('[Watcher] Failed to extract lootDB content');
         return;
       }
 
+      logger.addEntry('system', 'Converting Lua table to JSON format...');
+
       // Convert Lua table string to JSON
       const jsonData = this.luaToJson(lootDataRaw);
       
+      if (!jsonData) {
+        logger.addEntry('error', 'JSON conversion failed (format mismatch)');
+        return;
+      }
+
       const outputDir = path.dirname(this.filePath);
       const outputPath = path.join(outputDir, 'RCLootCouncil.json');
       
+      logger.addEntry('system', `Saving export to ${path.basename(outputPath)}...`);
+      
       fs.writeFileSync(outputPath, JSON.stringify(jsonData, null, 2), 'utf8');
-      logger.addEntry('success', `Exported lootDB to ${path.basename(outputPath)}`);
+      logger.addEntry('success', `Exported lootDB successfully: ${path.basename(outputPath)}`);
       console.log(`[Watcher] Exported lootDB to: ${outputPath}`);
 
     } catch (err) {

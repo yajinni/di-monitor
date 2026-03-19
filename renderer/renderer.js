@@ -170,6 +170,9 @@ async function loadSettings() {
   if (s.wowPath) {
     await validateAddon(s.wowPath);
   }
+
+  const version = await window.diMonitor.getAppVersion();
+  document.getElementById('appVersion').textContent = `v${version}`;
 }
 
 // Browse for WoW folder

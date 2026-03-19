@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('diMonitor', {
   selectAttendanceFile: () => ipcRenderer.invoke('select-attendance-file'),
   validateAddon: (wowPath) => ipcRenderer.invoke('validate-addon', wowPath),
   openLogsFolder: () => ipcRenderer.invoke('open-logs-folder'),
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   onLogUpdate: (callback) => {
     ipcRenderer.on('log-update', (event, entry) => callback(entry));
   },

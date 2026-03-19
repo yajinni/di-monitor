@@ -9,7 +9,10 @@
 <body>
   <div class="app">
     <div class="header">
-      <h1>DI Monitor</h1>
+      <div style="display: flex; align-items: baseline; gap: 8px;">
+        <h1>DI Monitor</h1>
+        <span id="appVersion" style="font-size: 10px; color: #666;">v0.0.0</span>
+      </div>
       <div class="connection-status" id="connectionStatus">
         <span class="status-dot" id="statusDot"></span>
         <span id="statusText">Not configured</span>

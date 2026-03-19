@@ -312,6 +312,10 @@ function setupIPC() {
   ipcMain.handle('open-logs-folder', () => {
     shell.openPath(app.getPath('userData'));
   });
+
+  ipcMain.handle('get-app-version', () => {
+    return app.getVersion();
+  });
 }
 
 function startPoller() {

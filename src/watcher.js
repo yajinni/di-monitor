@@ -141,9 +141,9 @@ class Watcher {
       
       logger.addEntry('system', 'Searching for lootDB table in Lua file...');
       
-      // Look for the lootDB table. It's usually nested inside profiles.
-      // We look for ["lootDB"] = { and match the balanced braces.
-      const lootDBMatch = content.match(/\["lootDB"\]\s*=\s*\{/);
+      // Look for the lootDB table.
+      // It could be ["lootDB"] = { inside a profile OR a top-level RCLootCouncilLootDB = {
+      const lootDBMatch = content.match(/RCLootCouncilLootDB\s*=\s*\{/) || content.match(/\["lootDB"\]\s*=\s*\{/);
       if (!lootDBMatch) {
         logger.addEntry('error', 'No lootDB table found in RCLootCouncil.lua');
         console.log('[Watcher] No lootDB found in RCLootCouncil.lua');

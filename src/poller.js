@@ -140,6 +140,11 @@ class Poller {
         const count = Object.keys(prData).length;
         console.log(`[DI Monitor] Data updated. Manual Sync: ${isManualSync}. Rows: ${count}`);
         
+        if (isManualSync) {
+          const syncTime = new Date(lastSync).toLocaleTimeString();
+          logger.addEntry('sync', `Manual PR sync signal received (${syncTime})`);
+        }
+
         if (changes.length > 0) {
           const msg = `PR values changed for ${changes.length} character${changes.length === 1 ? '' : 's'}`;
           logger.addEntry('received', msg, { changes });

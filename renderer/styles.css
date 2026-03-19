@@ -143,6 +143,7 @@ body {
 .log-updated .log-type { color: #4caf50; }
 .log-error .log-type { color: #ef5350; }
 .log-connection .log-type { color: #ffb74d; }
+.log-sync .log-type { color: #ba68c8; }
 
 /* Settings Tab */
 .settings-form {

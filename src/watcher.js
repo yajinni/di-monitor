@@ -11,6 +11,15 @@ class Watcher {
     this.isWatching = false;
   }
 
+  getNormalizedUrl() {
+    if (!this.siteUrl) return '';
+    let url = this.siteUrl.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    return url.replace(/\/+$/, '');
+  }
+
   configure(filePath, siteUrl) {
     const changed = this.filePath !== filePath || this.siteUrl !== siteUrl;
     this.filePath = filePath;
@@ -80,10 +89,11 @@ class Watcher {
   }
 
   async triggerSync() {
-    if (!this.siteUrl) return;
+    const baseUrl = this.getNormalizedUrl();
+    if (!baseUrl) return;
 
     logger.addEntry('connection', 'Triggering WoW Audit loot sync from RCLootCouncil update');
-    const url = `${this.siteUrl.replace(/\/+$/, '')}/api/sync-loot-from-wowaudit`;
+    const url = `${baseUrl}/api/sync-loot-from-wowaudit`;
     
     console.log(`[Watcher] Triggering sync at: ${url}`);
 

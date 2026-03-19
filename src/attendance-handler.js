@@ -11,6 +11,15 @@ class AttendanceHandler {
     this.isWatching = false;
   }
 
+  getNormalizedUrl() {
+    if (!this.siteUrl) return '';
+    let url = this.siteUrl.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    return url.replace(/\/+$/, '');
+  }
+
   configure(filePath, siteUrl) {
     const changed = this.filePath !== filePath || this.siteUrl !== siteUrl;
     this.filePath = filePath;
@@ -125,7 +134,10 @@ class AttendanceHandler {
   }
 
   async uploadAttendance(data) {
-    const url = `${this.siteUrl.replace(/\/+$/, '')}/api/attendance`;
+    const baseUrl = this.getNormalizedUrl();
+    if (!baseUrl) return false;
+
+    const url = `${baseUrl}/api/attendance`;
     console.log(`[AttendanceHandler] Uploading to: ${url}`);
 
     try {

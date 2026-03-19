@@ -12,6 +12,15 @@ class Poller {
     this.mainWindow = null;
   }
 
+  getNormalizedUrl() {
+    if (!this.siteUrl) return '';
+    let url = this.siteUrl.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    return url.replace(/\/+$/, '');
+  }
+
   setMainWindow(win) {
     this.mainWindow = win;
   }
@@ -62,8 +71,11 @@ class Poller {
     }
 
     try {
+      const baseUrl = this.getNormalizedUrl();
+      if (!baseUrl) return;
+
       // 1. Check if the database has updated by getting the latest timestamp
-      const timestampUrl = `${this.siteUrl.replace(/\/+$/, '')}/api/roster-last-updated`;
+      const timestampUrl = `${baseUrl}/api/roster-last-updated`;
       const tsRes = await fetch(timestampUrl);
       
       if (!tsRes.ok) {
@@ -83,7 +95,7 @@ class Poller {
       const newTimestamp = tsData.last_updated;
 
       // 2. Actually fetch the roster since it has changed
-      const url = `${this.siteUrl.replace(/\/+$/, '')}/api/roster`;
+      const url = `${baseUrl}/api/roster`;
       console.log('[Poller] Data changed, fetching full roster PRs:', url);
 
       const res = await fetch(url);
@@ -143,8 +155,12 @@ class Poller {
 
       this.notifyStatus('Connected');
     } catch (err) {
-      logger.addEntry('error', `Poll failed: ${err.message}`);
-      this.notifyStatus(`Error: ${err.message}`);
+      let msg = err.message;
+      if (msg === 'fetch failed') {
+        msg = 'Connection failed. Check your URL and Internet.';
+      }
+      logger.addEntry('error', `Poll failed: ${msg}`);
+      this.notifyStatus(`Error: ${msg}`);
     }
   }
 

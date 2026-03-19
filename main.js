@@ -1,6 +1,27 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, dialog, Notification, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+
+// Global error handling to catch issues before ready
+process.on('uncaughtException', (error) => {
+  const errorMsg = `[Uncaught Exception] ${error.stack || error}`;
+  console.error(errorMsg);
+  try {
+    const logPath = path.join(app.getPath('userData'), 'crash-log.txt');
+    fs.appendFileSync(logPath, `${new Date().toLocaleString()}: ${errorMsg}\n`);
+  } catch (e) {}
+  app.quit();
+});
+
+process.on('unhandledRejection', (reason) => {
+  const errorMsg = `[Unhandled Rejection] ${reason}`;
+  console.error(errorMsg);
+  try {
+    const logPath = path.join(app.getPath('userData'), 'crash-log.txt');
+    fs.appendFileSync(logPath, `${new Date().toLocaleString()}: ${errorMsg}\n`);
+  } catch (e) {}
+});
+
 const settings = require('./src/settings');
 const logger = require('./src/logger');
 const Poller = require('./src/poller');

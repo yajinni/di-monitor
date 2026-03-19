@@ -1,6 +1,6 @@
 {
   "name": "di-monitor",
-  "version": "2.2.0-beta",
+  "version": "2.3.0-beta",
   "description": "System tray app that receives PR values from Loot Manager and updates WoW addon SavedVariables",
   "main": "main.js",
   "scripts": {
@@ -26,12 +26,10 @@
       "preload.js",
       "renderer/**/*",
       "src/**/*",
-      "assets/**/*",
-      "node_modules/**/*"
+      "assets/**/*"
     ],
     "win": {
       "certificateFile": false,
-      "requestedExecutionLevel": "requireAdministrator",
       "target": [
         {
           "target": "nsis",

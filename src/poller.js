@@ -21,9 +21,13 @@ class Poller {
     this.siteUrl = siteUrl;
     this.interval = intervalSeconds;
 
-    if (changed && this.timer) {
-      this.stop();
-      this.start();
+    if (changed) {
+      if (this.timer) {
+        this.stop();
+      }
+      if (this.siteUrl) {
+        this.start();
+      }
     }
   }
 

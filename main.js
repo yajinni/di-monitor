@@ -2,6 +2,7 @@ const { app, BrowserWindow, Tray, Menu, ipcMain, dialog, Notification, shell } =
 const path = require('path');
 const fs = require('fs');
 const settings = require('./src/settings');
+const logger = require('./src/logger');
 const Poller = require('./src/poller');
 const Watcher = require('./src/watcher');
 const AttendanceHandler = require('./src/attendance-handler');

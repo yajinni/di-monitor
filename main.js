@@ -149,13 +149,21 @@ async function handlePRUpdate(prData, lastSync) {
 
   console.log('[DI Monitor] Addon folder exists, attempting write...');
 
+  // Use the current time as a fallback if no sync timestamp was provided by the API
+  const finalSyncTime = lastSync || new Date().toISOString();
+
   try {
-    await writeSavedVariables(filePath, prData, lastSync);
+    await writeSavedVariables(filePath, prData, finalSyncTime);
     const count = Object.keys(prData).length;
     let msg = `PR values updated for ${count} characters`;
-    if (lastSync) {
-      msg += ` (Manual Sync: ${new Date(lastSync).toLocaleTimeString()})`;
-    }
+    
+    // Add time details to the log
+    const timeDisplay = lastSync ? 
+      `Manual Sync: ${new Date(lastSync).toLocaleTimeString()}` : 
+      `Local Sync: ${new Date(finalSyncTime).toLocaleTimeString()}`;
+    
+    msg += ` (${timeDisplay})`;
+    
     logger.addEntry('updated', msg);
     console.log('[DI Monitor] Write successful');
   } catch (err) {

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
 const logger = require('./logger');
 
 class Watcher {
@@ -180,9 +181,40 @@ class Watcher {
       logger.addEntry('success', `Exported lootDB successfully: ${path.basename(outputPath)}`);
       console.log(`[Watcher] Exported lootDB to: ${outputPath}`);
 
+      // Automatically upload to site
+      await this.uploadLootJSON(jsonData);
+
     } catch (err) {
       console.error('[Watcher] Error exporting lootDB:', err);
       logger.addEntry('error', `Failed to export LootDB: ${err.message}`);
+    }
+  }
+
+  async uploadLootJSON(jsonData) {
+    const baseUrl = this.getNormalizedUrl();
+    if (!baseUrl) {
+      logger.addEntry('system', 'Skipping loot upload: No site URL configured.');
+      return;
+    }
+
+    const url = `${baseUrl}/api/sync-loot-json`;
+    logger.addEntry('system', 'Uploading loot to website...');
+
+    try {
+      const response = await axios.post(url, jsonData, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 15000
+      });
+
+      if (response.data && response.data.success) {
+        logger.addEntry('success', `Loot uploaded successfully: ${response.data.message}`);
+      } else {
+        logger.addEntry('error', `Loot upload failed: ${response.data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error('[Watcher] Upload error:', err);
+      const errorMsg = err.response?.data?.error || err.message;
+      logger.addEntry('error', `Loot upload failed: ${errorMsg}`);
     }
   }
 

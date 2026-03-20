@@ -40,14 +40,26 @@ function readSavedVariables(filePath) {
   }
 
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
-    const prData = {};
+    let content = fs.readFileSync(filePath, 'utf8');
     
-    // Simple regex to match ["key"] = value
-    const regex = /\["([^"]+)"\]\s*=\s*([0-9.]+)/g;
+    // Handle BOM if present
+    if (content.charCodeAt(0) === 0xFEFF) {
+      content = content.slice(1);
+    }
+
+    const prData = {};
+    let count = 0;
+    
+    // More robust regex to handle any characters in keys and various number formats
+    const regex = /\["(.+?)"\]\s*=\s*([-0-9.]+)/g;
     let match;
     while ((match = regex.exec(content)) !== null) {
-      prData[match[1]] = parseFloat(match[2]);
+      const key = match[1];
+      const value = parseFloat(match[2]);
+      if (!isNaN(value)) {
+        prData[key] = value;
+        count++;
+      }
     }
 
     // Also try to extract last sync
@@ -57,7 +69,8 @@ function readSavedVariables(filePath) {
       lastSync = syncMatch[1];
     }
 
-    return { prData, lastSync };
+    console.log(`[LuaWriter] Read ${count} PR values from ${filePath}`);
+    return { prData, lastSync, count };
   } catch (err) {
     console.error('[LuaWriter] Failed to read SavedVariables:', err);
     return null;

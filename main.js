@@ -349,6 +349,9 @@ function startPoller() {
       const existing = readSavedVariables(filePath);
       if (existing) {
         poller.setInitialData(existing.prData, existing.lastSync);
+        logger.addEntry('system', `Initialized from local file: ${existing.count} characters found.`);
+      } else {
+        logger.addEntry('system', 'Failed to parse existing PRValues.lua');
       }
     }
 

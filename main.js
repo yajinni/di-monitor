@@ -240,7 +240,8 @@ function setupIPC() {
 
     // Reconfigure watcher with new settings
     if (watcher) {
-      const jsonPath = newSettings.wowPath ? path.join(newSettings.wowPath, '_retail_', 'Interface', 'AddOns', ADDON_NAME, 'extracted_loot.json') : null;
+      const retailPath = getRetailPath(newSettings.wowPath);
+      const jsonPath = retailPath ? path.join(retailPath, 'Interface', 'AddOns', ADDON_NAME, 'extracted_loot.json') : null;
       watcher.configure(settings.get('rclootcouncilPath'), jsonPath, settings.get('siteUrl'));
     }
 
@@ -333,12 +334,21 @@ function setupIPC() {
   ipcMain.handle('send-loot-data', async () => {
     if (!watcher) return { success: false, error: 'Watcher not initialized' };
     try {
-      // Manually trigger the extraction and upload
+      // 1. Manually trigger the extraction
       const result = await watcher.exportLootDBToJSON();
-      if (result && result.success) {
-        return { success: true, message: 'Loot data sent successfully', items: result.items };
+      if (!result || !result.success) {
+        return { success: false, error: result?.error || 'Loot extraction failed' };
+      }
+
+      // 2. Perform the upload immediately for manual trigger
+      // We set a flag to prevent the watcher from doing a duplicate upload when it sees the file write
+      watcher.ignoreNextJsonChange = true;
+      const upload = await watcher.triggerLootUpload(result.items);
+      
+      if (upload && upload.success) {
+        return { success: true, message: upload.message || 'Loot data sent successfully', items: result.items };
       } else {
-        return { success: false, error: result?.error || 'Loot sync failed' };
+        return { success: false, error: upload?.error || 'Loot upload failed' };
       }
     } catch (err) {
       return { success: false, error: err.message };
@@ -347,7 +357,8 @@ function setupIPC() {
 
   ipcMain.handle('get-wow-accounts', async (event, wowPath) => {
     if (!wowPath) return [];
-    const accountDir = path.join(wowPath, '_retail_', 'WTF', 'Account');
+    const retailPath = getRetailPath(wowPath);
+    const accountDir = path.join(retailPath, 'WTF', 'Account');
     if (!fs.existsSync(accountDir)) return [];
 
     try {
@@ -364,7 +375,8 @@ function setupIPC() {
 
   ipcMain.handle('get-account-files', async (event, { wowPath, accountName }) => {
     if (!wowPath || !accountName) return null;
-    const svDir = path.join(wowPath, '_retail_', 'WTF', 'Account', accountName, 'SavedVariables');
+    const retailPath = getRetailPath(wowPath);
+    const svDir = path.join(retailPath, 'WTF', 'Account', accountName, 'SavedVariables');
     
     return {
       rclPath: path.join(svDir, 'RCLootCouncil.lua'),
@@ -415,8 +427,9 @@ function startWatcher() {
   const siteUrl = settings.get('siteUrl');
   const wowPath = settings.get('wowPath');
   
+  const retailPath = getRetailPath(wowPath);
   // New JSON path: /AddOns/DI_To_RCL_Import/extracted_loot.json
-  const jsonPath = wowPath ? path.join(wowPath, '_retail_', 'Interface', 'AddOns', ADDON_NAME, 'extracted_loot.json') : null;
+  const jsonPath = retailPath ? path.join(retailPath, 'Interface', 'AddOns', ADDON_NAME, 'extracted_loot.json') : null;
   
   watcher.configure(rclPath, jsonPath, siteUrl);
 }

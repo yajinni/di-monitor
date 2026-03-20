@@ -12,6 +12,7 @@ class Watcher {
     this.jsonTimeoutId = null;
     this.debounceMs = 10000; // 10 seconds
     this.isWatching = false;
+    this.ignoreNextJsonChange = false;
   }
 
   getNormalizedUrl() {
@@ -115,6 +116,12 @@ class Watcher {
   }
 
   handleJsonChange() {
+    if (this.ignoreNextJsonChange) {
+      console.log('[Watcher] Ignoring JSON change (triggered by manual sync)');
+      this.ignoreNextJsonChange = false;
+      return;
+    }
+
     if (this.jsonTimeoutId) {
       clearTimeout(this.jsonTimeoutId);
     }

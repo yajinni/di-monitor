@@ -140,7 +140,7 @@ class Watcher {
     if (!baseUrl) return;
 
     logger.addEntry('connection', 'Triggering roster sync from WoW Audit...');
-    const url = `${baseUrl}/api/sync-loot-from-wowaudit`;
+    const url = `${baseUrl}/api/roster`;
     
     console.log(`[Watcher] Triggering roster sync at: ${url}`);
 
@@ -152,7 +152,7 @@ class Watcher {
       console.log(`[Watcher] Roster sync status: ${response.status}`);
 
       if (response.data && response.data.success) {
-        logger.addEntry('success', `Roster sync successful: ${response.data.inserted || 0} characters updated`);
+        logger.addEntry('success', `Roster sync successful: ${response.data.count || 0} characters updated`);
       } else {
         const error = response.data?.error || 'Unknown error';
         logger.addEntry('error', `Roster sync failed: ${error}`);

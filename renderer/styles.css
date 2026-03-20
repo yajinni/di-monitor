@@ -201,6 +201,25 @@ button:hover {
   background: #c73850;
 }
 
+.primary-btn {
+  background: #e94560;
+  color: white;
+}
+
+.primary-btn:hover {
+  background: #c73850;
+}
+
+.secondary-btn {
+  background: #0f3460;
+  color: #888;
+}
+
+.secondary-btn:hover {
+  background: #16213e;
+  color: #ccc;
+}
+
 .checkbox-label {
   display: flex !important;
   align-items: center;

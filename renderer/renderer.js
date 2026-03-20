@@ -260,3 +260,37 @@ window.diMonitor.onPollStatus((status) => {
 // Initialize
 loadLogs();
 loadSettings();
+
+// Manual Sync Button
+const sendLootBtn = document.getElementById('sendLootBtn');
+if (sendLootBtn) {
+  sendLootBtn.addEventListener('click', async () => {
+    sendLootBtn.disabled = true;
+    sendLootBtn.textContent = 'Sending...';
+    try {
+      const result = await window.diMonitor.sendLootData();
+      if (result.success) {
+        addLogEntry({
+          timestamp: new Date().toLocaleString(),
+          type: 'success',
+          message: `Loot manual sync: ${result.message}`
+        });
+      } else {
+        addLogEntry({
+          timestamp: new Date().toLocaleString(),
+          type: 'error',
+          message: `Loot manual sync failed: ${result.error}`
+        });
+      }
+    } catch (e) {
+      addLogEntry({
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'error',
+        message: `Loot manual sync error: ${e.message}`
+      });
+    } finally {
+      sendLootBtn.disabled = false;
+      sendLootBtn.textContent = 'Send Loot Data';
+    }
+  });
+}

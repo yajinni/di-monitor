@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('diMonitor', {
   validateAddon: (wowPath) => ipcRenderer.invoke('validate-addon', wowPath),
   openLogsFolder: () => ipcRenderer.invoke('open-logs-folder'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  sendLootData: () => ipcRenderer.invoke('send-loot-data'),
   onLogUpdate: (callback) => {
     ipcRenderer.on('log-update', (event, entry) => callback(entry));
   },

@@ -316,6 +316,17 @@ function setupIPC() {
   ipcMain.handle('get-app-version', () => {
     return app.getVersion();
   });
+
+  ipcMain.handle('send-loot-data', async () => {
+    if (!watcher) return { success: false, error: 'Watcher not initialized' };
+    try {
+      // Manually trigger the extraction and upload
+      const result = await watcher.exportLootDBToJSON();
+      return { success: true, message: 'Loot data sent successfully' };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
 }
 
 function startPoller() {

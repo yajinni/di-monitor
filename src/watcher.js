@@ -146,21 +146,23 @@ class Watcher {
 
     try {
       const response = await axios.post(url, {}, {
-        timeout: 30000 // Roster sync can take a while
+        timeout: 45000 // Roster sync can be very slow
       });
 
-      console.log(`[Watcher] Roster sync status: ${response.status}`);
+      console.log(`[Watcher] Roster sync status: ${response.status}`, response.data);
 
       if (response.data && response.data.success) {
         logger.addEntry('success', `Roster sync successful: ${response.data.count || 0} characters updated`);
       } else {
         const error = response.data?.error || 'Unknown error';
-        logger.addEntry('error', `Roster sync failed: ${error}`);
+        const details = response.data?.details || '';
+        logger.addEntry('error', `Roster sync failed: ${error}${details ? ' - ' + details : ''}`);
       }
     } catch (err) {
       console.error('[Watcher] Network error during roster sync:', err);
       const errorMsg = err.response?.data?.error || err.message;
-      logger.addEntry('error', `Network error triggering roster sync: ${errorMsg}`);
+      const details = err.response?.data?.details || '';
+      logger.addEntry('error', `Network error triggering roster sync: ${errorMsg}${details ? ' (' + details + ')' : ''}`);
     }
   }
 

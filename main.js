@@ -192,6 +192,7 @@ function setupIPC() {
   ipcMain.handle('get-settings', () => {
     return {
       wowPath: settings.get('wowPath'),
+      wowAccount: settings.get('wowAccount'),
       runOnStartup: settings.get('runOnStartup'),
       siteUrl: settings.get('siteUrl'),
       pollInterval: settings.get('pollInterval'),
@@ -203,6 +204,9 @@ function setupIPC() {
   ipcMain.handle('save-settings', (event, newSettings) => {
     if (newSettings.wowPath !== undefined) {
       settings.set('wowPath', newSettings.wowPath);
+    }
+    if (newSettings.wowAccount !== undefined) {
+      settings.set('wowAccount', newSettings.wowAccount);
     }
     if (newSettings.runOnStartup !== undefined) {
       settings.set('runOnStartup', newSettings.runOnStartup);
@@ -326,6 +330,34 @@ function setupIPC() {
     } catch (err) {
       return { success: false, error: err.message };
     }
+  });
+
+  ipcMain.handle('get-wow-accounts', async (event, wowPath) => {
+    if (!wowPath) return [];
+    const accountDir = path.join(wowPath, '_retail_', 'WTF', 'Account');
+    if (!fs.existsSync(accountDir)) return [];
+
+    try {
+      const files = fs.readdirSync(accountDir);
+      return files.filter(f => {
+        const fullPath = path.join(accountDir, f);
+        return fs.statSync(fullPath).isDirectory() && f !== 'AllAccounts' && f !== 'SavedVariables';
+      });
+    } catch (err) {
+      console.error('[Main] Failed to list accounts:', err);
+      return [];
+    }
+  });
+
+  ipcMain.handle('get-account-files', async (event, { wowPath, accountName }) => {
+    if (!wowPath || !accountName) return null;
+    const svDir = path.join(wowPath, '_retail_', 'WTF', 'Account', accountName, 'SavedVariables');
+    
+    return {
+      rclPath: path.join(svDir, 'RCLootCouncil.lua'),
+      attendancePath: path.join(svDir, 'DI_To_RCL_Import.lua'),
+      exists: fs.existsSync(svDir)
+    };
   });
 }
 

@@ -71,24 +71,32 @@
           <div id="addonStatus" class="addon-status"></div>
         </div>
 
-        <div class="setting-group" style="margin-top: 20px;">
-          <label>RCLootCouncil SavedVariables File</label>
-          <div class="file-picker">
-            <input type="text" id="rclPath" readonly placeholder="Select RCLootCouncil.lua...">
-            <button id="browseRclBtn">Browse</button>
-          </div>
-          <div id="rclPathError" class="field-error"></div>
-          <div class="field-hint">Automatically sync loot to website 10 seconds after this file changes.</div>
+        <div class="setting-group" id="accountGroup" style="display: none; margin-top: 20px;">
+          <label>WoW Account</label>
+          <select id="wowAccount" style="width: 100%; padding: 8px; background: #0f3460; color: white; border: 1px solid #16213e; border-radius: 4px;">
+            <option value="">-- Select Account --</option>
+          </select>
+          <div class="field-hint">Select the account folder to automatically find your data files.</div>
         </div>
 
-        <div class="setting-group" style="margin-top: 20px;">
-          <label>DI Attendance SavedVariables File</label>
-          <div class="file-picker">
-            <input type="text" id="attendancePath" readonly placeholder="Select DI_To_RCL_Import.lua...">
-            <button id="browseAttendanceBtn">Browse</button>
+        <div id="manualFilesSection" style="margin-top: 10px;">
+          <div class="setting-group" style="margin-top: 20px; opacity: 0.7;">
+            <label>RCLootCouncil SavedVariables File (Auto-found)</label>
+            <div class="file-picker">
+              <input type="text" id="rclPath" readonly placeholder="Will be found automatically...">
+              <button id="browseRclBtn" style="font-size: 11px;">Manual Override</button>
+            </div>
+            <div id="rclPathError" class="field-error"></div>
           </div>
-          <div id="attendancePathError" class="field-error"></div>
-          <div class="field-hint">Automatically sync attendance to website after this file changes.</div>
+
+          <div class="setting-group" style="margin-top: 20px; opacity: 0.7;">
+            <label>DI Attendance SavedVariables File (Auto-found)</label>
+            <div class="file-picker">
+              <input type="text" id="attendancePath" readonly placeholder="Will be found automatically...">
+              <button id="browseAttendanceBtn" style="font-size: 11px;">Manual Override</button>
+            </div>
+            <div id="attendancePathError" class="field-error"></div>
+          </div>
         </div>
 
         <div class="section-label">General</div>

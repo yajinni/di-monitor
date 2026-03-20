@@ -15,6 +15,8 @@ const browseAttendanceBtn = document.getElementById('browseAttendanceBtn');
 const attendancePathError = document.getElementById('attendancePathError');
 const openLogsBtn = document.getElementById('openLogsBtn');
 const runOnStartupCheckbox = document.getElementById('runOnStartup');
+const wowAccountSelect = document.getElementById('wowAccount');
+const accountGroup = document.getElementById('accountGroup');
 const saveBtn = document.getElementById('saveBtn');
 const saveMessage = document.getElementById('saveMessage');
 
@@ -249,10 +251,33 @@ async function loadSettings() {
 
   if (s.wowPath) {
     await validateAddon(s.wowPath);
+    await refreshAccounts(s.wowPath, s.wowAccount);
   }
 
   const version = await window.diMonitor.getAppVersion();
   document.getElementById('appVersion').textContent = `v${version}`;
+}
+
+async function refreshAccounts(wowPath, selectedAccount) {
+  if (!wowPath) {
+    accountGroup.style.display = 'none';
+    return;
+  }
+
+  const accounts = await window.diMonitor.getWowAccounts(wowPath);
+  if (accounts && accounts.length > 0) {
+    wowAccountSelect.innerHTML = '<option value="">-- Select Account --</option>';
+    accounts.forEach(acc => {
+      const opt = document.createElement('option');
+      opt.value = acc;
+      opt.textContent = acc;
+      if (acc === selectedAccount) opt.selected = true;
+      wowAccountSelect.appendChild(opt);
+    });
+    accountGroup.style.display = 'block';
+  } else {
+    accountGroup.style.display = 'none';
+  }
 }
 
 // Browse for WoW folder
@@ -265,11 +290,25 @@ browseWowBtn.addEventListener('click', async () => {
     wowPathError.textContent = '';
     wowPathError.className = 'field-error';
     await validateAddon(result.path);
+    await refreshAccounts(result.path);
   } else {
     wowPathInput.value = result.path;
     wowPathError.textContent = result.error;
     wowPathError.className = 'field-error visible';
     addonStatus.textContent = '';
+  }
+});
+
+// WoW Account changed
+wowAccountSelect.addEventListener('change', async () => {
+  const accountName = wowAccountSelect.value;
+  const wowPath = wowPathInput.value;
+  if (!accountName || !wowPath) return;
+
+  const files = await window.diMonitor.getAccountFiles({ wowPath, accountName });
+  if (files) {
+    rclPathInput.value = files.rclPath;
+    attendancePathInput.value = files.attendancePath;
   }
 });
 
@@ -314,6 +353,7 @@ openLogsBtn.addEventListener('click', () => {
 saveBtn.addEventListener('click', async () => {
   await window.diMonitor.saveSettings({
     wowPath: wowPathInput.value,
+    wowAccount: wowAccountSelect.value,
     runOnStartup: runOnStartupCheckbox.checked,
     siteUrl: siteUrlInput.value,
     rclootcouncilPath: rclPathInput.value,

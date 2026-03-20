@@ -322,7 +322,7 @@ function setupIPC() {
     try {
       // Manually trigger the extraction and upload
       const result = await watcher.exportLootDBToJSON();
-      return { success: true, message: 'Loot data sent successfully' };
+      return { success: true, message: 'Loot data sent successfully', items: result.items };
     } catch (err) {
       return { success: false, error: err.message };
     }

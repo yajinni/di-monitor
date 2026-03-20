@@ -45,6 +45,13 @@ function addLogEntry(entry) {
     tr.addEventListener('mouseout', () => tr.style.opacity = '0.8');
     tr.addEventListener('click', () => showChangesDialog(entry.metadata.changes));
     msgCell.style.textDecoration = 'underline dotted';
+  } else if (entry.metadata && entry.metadata.items) {
+    tr.style.cursor = 'pointer';
+    tr.style.opacity = '0.8';
+    tr.addEventListener('mouseover', () => tr.style.opacity = '1');
+    tr.addEventListener('mouseout', () => tr.style.opacity = '0.8');
+    tr.addEventListener('click', () => showLootDialog(entry.metadata.items));
+    msgCell.style.textDecoration = 'underline dotted';
   }
 
   tr.innerHTML = `
@@ -115,6 +122,79 @@ function showChangesDialog(changes) {
     margin-top: 16px;
     padding: 8px 16px;
     background: #e94560;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+  `;
+  closeBtn.addEventListener('click', () => dialog.remove());
+  content.appendChild(closeBtn);
+
+  dialog.appendChild(content);
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.remove();
+  });
+
+  document.body.appendChild(dialog);
+}
+
+function showLootDialog(items) {
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+
+  const content = document.createElement('div');
+  content.style.cssText = `
+    background: #16213e;
+    border: 2px solid #48abe0;
+    border-radius: 8px;
+    padding: 20px;
+    width: 600px;
+    max-height: 500px;
+    overflow-y: auto;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+  `;
+
+  let html = '<h3 style="color: #48abe0; margin-top: 0;">New Loot Recorded</h3>';
+  
+  if (!items || items.length === 0) {
+    html += '<p style="color: #888;">No new items were added (they might have already been synced).</p>';
+  } else {
+    html += '<table style="width: 100%; border-collapse: collapse;">';
+    html += '<thead><tr style="border-bottom: 1px solid #0f3460;"><th style="text-align: left; padding: 8px;">Character</th><th style="text-align: left; padding: 8px;">Item</th><th style="text-align: right; padding: 8px;">GP</th></tr></thead>';
+    html += '<tbody>';
+
+    for (const item of items) {
+      html += `<tr style="border-bottom: 1px solid #0f3460;">
+        <td style="padding: 8px;">${item.char}</td>
+        <td style="padding: 8px; color: #fff;">${item.name}</td>
+        <td style="text-align: right; padding: 8px; color: #4caf50;">${item.gp > 0 ? '+' + item.gp : '-'}</td>
+      </tr>`;
+    }
+
+    html += '</tbody></table>';
+  }
+  
+  content.innerHTML = html;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.style.cssText = `
+    margin-top: 16px;
+    padding: 8px 16px;
+    background: #48abe0;
     color: white;
     border: none;
     border-radius: 4px;
@@ -273,7 +353,8 @@ if (sendLootBtn) {
         addLogEntry({
           timestamp: new Date().toLocaleString(),
           type: 'success',
-          message: `Loot manual sync: ${result.message}`
+          message: `Loot manual sync: ${result.message}`,
+          metadata: { items: result.items }
         });
       } else {
         addLogEntry({

@@ -179,10 +179,9 @@ class Watcher {
       
       fs.writeFileSync(outputPath, JSON.stringify(jsonData, null, 2), 'utf8');
       logger.addEntry('success', `Exported lootDB successfully: ${path.basename(outputPath)}`);
-      console.log(`[Watcher] Exported lootDB to: ${outputPath}`);
-
-      // Automatically upload to site
-      await this.uploadLootJSON(jsonData);
+      
+      const uploadResult = await this.triggerLootUpload(jsonData);
+      return uploadResult;
 
     } catch (err) {
       console.error('[Watcher] Error exporting lootDB:', err);
@@ -207,14 +206,17 @@ class Watcher {
       });
 
       if (response.data && response.data.success) {
-        logger.addEntry('success', `Loot uploaded successfully: ${response.data.message}`);
+        logger.addEntry('success', `Loot uploaded successfully: ${response.data.message}`, { items: response.data.insertedItems });
+        return { success: true, message: response.data.message, items: response.data.insertedItems };
       } else {
         logger.addEntry('error', `Loot upload failed: ${response.data.error || 'Unknown error'}`);
+        return { success: false, error: response.data.error || 'Unknown error' };
       }
     } catch (err) {
       console.error('[Watcher] Upload error:', err);
       const errorMsg = err.response?.data?.error || err.message;
       logger.addEntry('error', `Loot upload failed: ${errorMsg}`);
+      return { success: false, error: errorMsg };
     }
   }
 

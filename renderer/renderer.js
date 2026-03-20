@@ -54,6 +54,13 @@ function addLogEntry(entry) {
     tr.addEventListener('mouseout', () => tr.style.opacity = '0.8');
     tr.addEventListener('click', () => showLootDialog(entry.metadata.items));
     msgCell.style.textDecoration = 'underline dotted';
+  } else if (entry.metadata && entry.metadata.unmatched) {
+    tr.style.cursor = 'pointer';
+    tr.style.opacity = '0.8';
+    tr.addEventListener('mouseover', () => tr.style.opacity = '1');
+    tr.addEventListener('mouseout', () => tr.style.opacity = '0.8');
+    tr.addEventListener('click', () => showUnmatchedPlayersDialog(entry.metadata.unmatched));
+    msgCell.style.textDecoration = 'underline dotted';
   }
 
   tr.innerHTML = `
@@ -198,6 +205,71 @@ function showLootDialog(items) {
     padding: 8px 16px;
     background: #48abe0;
     color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+  `;
+  closeBtn.addEventListener('click', () => dialog.remove());
+  content.appendChild(closeBtn);
+
+  dialog.appendChild(content);
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.remove();
+  });
+
+  document.body.appendChild(dialog);
+}
+
+function showUnmatchedPlayersDialog(players) {
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+
+  const content = document.createElement('div');
+  content.style.cssText = `
+    background: #16213e;
+    border: 2px solid #f9a825;
+    border-radius: 8px;
+    padding: 20px;
+    width: 500px;
+    max-height: 400px;
+    overflow-y: auto;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+  `;
+
+  let html = '<h3 style="color: #f9a825; margin-top: 0;">Characters Not on Roster</h3>';
+  html += '<p style="font-size: 14px; color: #bbb; line-height: 1.4;">The following character names (as seen in your addon) were not found in your website\'s roster. These loot records were saved, but they aren\'t linked to a specific character profile.</p>';
+  html += '<ul style="margin-top: 15px; padding-left: 20px; color: #fff; line-height: 1.6;">';
+  
+  // Sort and list names
+  const sortedPlayers = [...players].sort();
+  for (const player of sortedPlayers) {
+    html += `<li>${player}</li>`;
+  }
+  
+  html += '</ul>';
+  content.innerHTML = html;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.style.cssText = `
+    margin-top: 20px;
+    padding: 10px;
+    background: #f9a825;
+    color: #1a1a2e;
+    font-weight: bold;
     border: none;
     border-radius: 4px;
     cursor: pointer;

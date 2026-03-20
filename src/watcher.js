@@ -249,10 +249,17 @@ class Watcher {
 
       if (response.data && response.data.success) {
         logger.addEntry('success', `Loot uploaded successfully: ${response.data.message}`, { items: response.data.insertedItems });
+        
+        if (response.data.unmatchedPlayers && response.data.unmatchedPlayers.length > 0) {
+           const count = response.data.unmatchedPlayers.length;
+           logger.addEntry('warning', `Warning: ${count} character${count === 1 ? '' : 's'} not found on roster.`, { unmatched: response.data.unmatchedPlayers });
+        }
+
         return { success: true, message: response.data.message, items: response.data.insertedItems };
       } else {
-        logger.addEntry('error', `Loot upload failed: ${response.data.error || 'Unknown error'}`);
-        return { success: false, error: response.data.error || 'Unknown error' };
+        const errorMsg = response.data.error || 'Unknown error';
+        logger.addEntry('error', `Loot upload failed: ${errorMsg}`);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       console.error('[Watcher] Upload error:', err);

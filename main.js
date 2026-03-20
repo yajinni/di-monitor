@@ -240,7 +240,8 @@ function setupIPC() {
 
     // Reconfigure watcher with new settings
     if (watcher) {
-      watcher.configure(settings.get('rclootcouncilPath'), settings.get('siteUrl'));
+      const jsonPath = newSettings.wowPath ? path.join(newSettings.wowPath, '_retail_', 'Interface', 'AddOns', ADDON_NAME, 'extracted_loot.json') : null;
+      watcher.configure(settings.get('rclootcouncilPath'), jsonPath, settings.get('siteUrl'));
     }
 
     if (attendanceHandler) {
@@ -410,10 +411,14 @@ function startWatcher() {
   console.log('[Main] startWatcher() called');
   watcher = new Watcher();
   
-  const rclPath = settings.get('rclootcouncilPath');
+  const rclPath = settings.get('rclootcouncilPath'); // RCLootCouncil.lua
   const siteUrl = settings.get('siteUrl');
+  const wowPath = settings.get('wowPath');
   
-  watcher.configure(rclPath, siteUrl);
+  // New JSON path: /AddOns/DI_To_RCL_Import/extracted_loot.json
+  const jsonPath = wowPath ? path.join(wowPath, '_retail_', 'Interface', 'AddOns', ADDON_NAME, 'extracted_loot.json') : null;
+  
+  watcher.configure(rclPath, jsonPath, siteUrl);
 }
 
 function startAttendanceHandler() {

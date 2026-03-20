@@ -5,9 +5,11 @@ const logger = require('./logger');
 
 class Watcher {
   constructor() {
-    this.filePath = '';
+    this.luaPath = '';
+    this.jsonPath = '';
     this.siteUrl = '';
-    this.timeoutId = null;
+    this.luaTimeoutId = null;
+    this.jsonTimeoutId = null;
     this.debounceMs = 10000; // 10 seconds
     this.isWatching = false;
   }
@@ -21,24 +23,25 @@ class Watcher {
     return url.replace(/\/+$/, '');
   }
 
-  configure(filePath, siteUrl) {
-    const changed = this.filePath !== filePath || this.siteUrl !== siteUrl;
-    this.filePath = filePath;
+  configure(luaPath, jsonPath, siteUrl) {
+    const changed = this.luaPath !== luaPath || this.jsonPath !== jsonPath || this.siteUrl !== siteUrl;
+    this.luaPath = luaPath;
+    this.jsonPath = jsonPath;
     this.siteUrl = siteUrl;
 
     if (changed) {
       if (this.isWatching) {
         this.stop();
       }
-      if (this.filePath && this.siteUrl) {
+      if (this.luaPath && this.siteUrl) {
         this.start();
       }
     }
   }
 
   start() {
-    if (!this.filePath || !fs.existsSync(this.filePath)) {
-      console.log(`[Watcher] Invalid or missing file path: ${this.filePath}`);
+    if (!this.luaPath || !fs.existsSync(this.luaPath)) {
+      console.log(`[Watcher] Invalid or missing Lua file path: ${this.luaPath}`);
       return;
     }
 
@@ -47,47 +50,89 @@ class Watcher {
       return;
     }
 
-    console.log(`[Watcher] Started watching: ${this.filePath}`);
+    console.log(`[Watcher] Started watching Lua: ${this.luaPath}`);
     logger.addEntry('system', `Started watching RCLootCouncil file`);
 
     this.isWatching = true;
     
-    // Using fs.watchFile which is generally more reliable for continuous tracking of a single file
-    fs.watchFile(this.filePath, { interval: 1000 }, (curr, prev) => {
-      // Only trigger if the file was modified
+    // 1. Watch the Lua file for extraction
+    fs.watchFile(this.luaPath, { interval: 1000 }, (curr, prev) => {
       if (curr.mtime > prev.mtime) {
-        console.log(`[Watcher] File change detected: ${this.filePath}`);
-        this.handleFileChange();
+        console.log(`[Watcher] Lua file change detected: ${this.luaPath}`);
+        this.handleLuaChange();
       }
     });
+
+    // 2. Watch the JSON file for uploading (if it exists)
+    this.refreshJsonWatcher();
+  }
+
+  refreshJsonWatcher() {
+    if (!this.jsonPath) return;
+
+    if (fs.existsSync(this.jsonPath)) {
+      console.log(`[Watcher] Started watching JSON: ${this.jsonPath}`);
+      fs.watchFile(this.jsonPath, { interval: 1000 }, (curr, prev) => {
+        if (curr.mtime > prev.mtime) {
+          console.log(`[Watcher] JSON file change detected: ${this.jsonPath}`);
+          this.handleJsonChange();
+        }
+      });
+    } else {
+      console.log(`[Watcher] JSON file not found yet: ${this.jsonPath}`);
+      logger.addEntry('system', 'No loot file made yet');
+    }
   }
 
   stop() {
-    if (this.isWatching && this.filePath) {
-      fs.unwatchFile(this.filePath);
-      console.log(`[Watcher] Stopped watching: ${this.filePath}`);
+    if (this.isWatching) {
+      if (this.luaPath) fs.unwatchFile(this.luaPath);
+      if (this.jsonPath) fs.unwatchFile(this.jsonPath);
+      console.log(`[Watcher] Stopped watching files`);
       this.isWatching = false;
     }
     
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId);
-      this.timeoutId = null;
+    if (this.luaTimeoutId) {
+      clearTimeout(this.luaTimeoutId);
+      this.luaTimeoutId = null;
+    }
+    if (this.jsonTimeoutId) {
+      clearTimeout(this.jsonTimeoutId);
+      this.jsonTimeoutId = null;
     }
   }
 
-  handleFileChange() {
-    // Clear any existing timeout (debounce)
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId);
+  handleLuaChange() {
+    if (this.luaTimeoutId) {
+      clearTimeout(this.luaTimeoutId);
     }
 
-    logger.addEntry('system', `Detected RCLootCouncil file change, waiting ${this.debounceMs / 1000}s...`);
+    logger.addEntry('system', `Detected RCLootCouncil.lua change, waiting ${this.debounceMs / 1000}s...`);
 
-    // Set new timeout to trigger the export after 10 seconds of no further changes
-    this.timeoutId = setTimeout(async () => {
-      // await this.triggerSync(); // User requested to stop automated sync
+    this.luaTimeoutId = setTimeout(async () => {
       await this.exportLootDBToJSON();
     }, this.debounceMs);
+  }
+
+  handleJsonChange() {
+    if (this.jsonTimeoutId) {
+      clearTimeout(this.jsonTimeoutId);
+    }
+
+    logger.addEntry('system', `Detected extracted_loot.json change, triggering upload in 2s...`);
+
+    // Shorter debounce for JSON since it's the final product
+    this.jsonTimeoutId = setTimeout(async () => {
+      try {
+        if (!fs.existsSync(this.jsonPath)) return;
+        const content = fs.readFileSync(this.jsonPath, 'utf8');
+        const jsonData = JSON.parse(content);
+        await this.triggerLootUpload(jsonData);
+      } catch (err) {
+        console.error('[Watcher] Failed to upload JSON:', err);
+        logger.addEntry('error', `JSON upload failed: ${err.message}`);
+      }
+    }, 2000);
   }
 
   async triggerSync() {
@@ -133,56 +178,53 @@ class Watcher {
   }
 
   async exportLootDBToJSON() {
-    if (!this.filePath || !fs.existsSync(this.filePath)) return;
+    if (!this.luaPath || !fs.existsSync(this.luaPath)) return;
 
-    logger.addEntry('system', 'Processing RCLootCouncil.lua for LootDB export...');
+    logger.addEntry('system', 'Extracting loot data from RCLootCouncil.lua...');
 
     try {
-      const content = fs.readFileSync(this.filePath, 'utf8');
-      
-      logger.addEntry('system', 'Searching for lootDB table in Lua file...');
-      
-      // Look for the lootDB table.
-      // It could be ["lootDB"] = { inside a profile OR a top-level RCLootCouncilLootDB = {
+      const content = fs.readFileSync(this.luaPath, 'utf8');
       const lootDBMatch = content.match(/RCLootCouncilLootDB\s*=\s*\{/) || content.match(/\["lootDB"\]\s*=\s*\{/);
+      
       if (!lootDBMatch) {
         logger.addEntry('error', 'No lootDB table found in RCLootCouncil.lua');
-        console.log('[Watcher] No lootDB found in RCLootCouncil.lua');
         return;
       }
-
-      logger.addEntry('system', 'LootDB table found, extracting content...');
 
       const startIndex = lootDBMatch.index + lootDBMatch[0].length - 1;
       const lootDataRaw = this.extractBalancedBraces(content, startIndex);
-      
       if (!lootDataRaw) {
-        logger.addEntry('error', 'Failed to extract balanced table content for lootDB');
-        console.log('[Watcher] Failed to extract lootDB content');
+        logger.addEntry('error', 'Failed to extract balanced table content');
         return;
       }
 
-      logger.addEntry('system', 'Converting Lua table to JSON format...');
-
-      // Convert Lua table string to JSON
       const jsonData = this.luaToJson(lootDataRaw);
-      
       if (!jsonData) {
-        logger.addEntry('error', 'JSON conversion failed (format mismatch)');
+        logger.addEntry('error', 'JSON conversion failed');
         return;
       }
 
-      const outputDir = path.dirname(this.filePath);
-      const outputPath = path.join(outputDir, 'RCLootCouncil.json');
-      
-      logger.addEntry('system', `Saving export to ${path.basename(outputPath)}...`);
-      
-      fs.writeFileSync(outputPath, JSON.stringify(jsonData, null, 2), 'utf8');
-      logger.addEntry('success', `Exported lootDB successfully: ${path.basename(outputPath)}`);
-      
-      const uploadResult = await this.triggerLootUpload(jsonData);
-      return uploadResult;
+      if (!this.jsonPath) {
+        logger.addEntry('error', 'Output JSON path not configured');
+        return;
+      }
 
+      // Ensure directory exists
+      const outputDir = path.dirname(this.jsonPath);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(this.jsonPath, JSON.stringify(jsonData, null, 2), 'utf8');
+      logger.addEntry('success', `Loot extracted to ${path.basename(this.jsonPath)}`);
+      
+      // If we just created the file for the first time, start watching it
+      if (this.isWatching) {
+        fs.unwatchFile(this.jsonPath); // Clear old watch if any
+        this.refreshJsonWatcher();
+      }
+
+      return { success: true, items: jsonData }; // For manual button trigger
     } catch (err) {
       console.error('[Watcher] Error exporting lootDB:', err);
       logger.addEntry('error', `Failed to export LootDB: ${err.message}`);

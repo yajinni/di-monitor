@@ -135,11 +135,11 @@ class Watcher {
     }, 2000);
   }
 
-  async triggerSync() {
+  async triggerRosterSync() {
     const baseUrl = this.getNormalizedUrl();
     if (!baseUrl) return;
 
-    logger.addEntry('connection', 'Triggering WoW Audit loot sync from RCLootCouncil update');
+    logger.addEntry('connection', 'Triggering roster sync from WoW Audit...');
     const url = `${baseUrl}/api/sync-loot-from-wowaudit`;
     
     console.log(`[Watcher] Triggering sync at: ${url}`);
@@ -231,7 +231,7 @@ class Watcher {
     }
   }
 
-  async triggerLootUpload(jsonData) {
+  async triggerLootUpload(jsonData, isRetry = false) {
     const baseUrl = this.getNormalizedUrl();
     if (!baseUrl) {
       logger.addEntry('system', 'Skipping loot upload: No site URL configured.');
@@ -239,7 +239,7 @@ class Watcher {
     }
 
     const url = `${baseUrl}/api/sync-loot-json`;
-    logger.addEntry('system', 'Uploading loot to website...');
+    logger.addEntry('system', isRetry ? 'Retrying loot upload...' : 'Uploading loot to website...');
 
     try {
       const response = await axios.post(url, jsonData, {
@@ -258,12 +258,36 @@ class Watcher {
         return { success: true, message: response.data.message, items: response.data.insertedItems };
       } else {
         const errorMsg = response.data.error || 'Unknown error';
+        
+        // Handle automated roster sync if roster is empty
+        if (response.data.rosterEmpty && !isRetry) {
+          logger.addEntry('system', 'Roster is empty. Auto-triggering roster sync from WoW Audit...');
+          await this.triggerRosterSync();
+          
+          logger.addEntry('system', 'Waiting 5 seconds for roster to populate before retry...');
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          
+          return await this.triggerLootUpload(jsonData, true);
+        }
+
         logger.addEntry('error', `Loot upload failed: ${errorMsg}`);
         return { success: false, error: errorMsg };
       }
     } catch (err) {
       console.error('[Watcher] Upload error:', err);
       const errorMsg = err.response?.data?.error || err.message;
+
+      // Handle rosterEmpty error from catch block (if status 400 returns properly)
+      if (err.response?.data?.rosterEmpty && !isRetry) {
+        logger.addEntry('system', 'Roster is empty. Auto-triggering roster sync from WoW Audit...');
+        await this.triggerRosterSync();
+        
+        logger.addEntry('system', 'Waiting 5 seconds for roster to populate before retry...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        return await this.triggerLootUpload(jsonData, true);
+      }
+
       logger.addEntry('error', `Loot upload failed: ${errorMsg}`);
       return { success: false, error: errorMsg };
     }

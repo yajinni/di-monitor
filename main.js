@@ -33,6 +33,17 @@ const { isWowRunning } = require('./src/wow-detector');
 const ADDON_NAME = 'DI_To_RCL_Import';
 const PR_VALUES_FILE = 'PRValues.lua';
 
+function getRetailPath(wowPath) {
+  if (!wowPath) return null;
+  // If user already selected the _retail_ folder itself
+  if (path.basename(wowPath).toLowerCase() === '_retail_') return wowPath;
+  // Standard case: user selected the root World of Warcraft folder
+  const retailPath = path.join(wowPath, '_retail_');
+  if (fs.existsSync(retailPath)) return retailPath;
+  // Fallback: just use whatever they gave us
+  return wowPath;
+}
+
 let mainWindow = null;
 let tray = null;
 let poller = null;

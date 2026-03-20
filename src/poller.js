@@ -63,6 +63,12 @@ class Poller {
     }
   }
 
+  setInitialData(data, lastSync) {
+    this.lastPRData = data || null;
+    this.lastManualSync = lastSync || null;
+    console.log('[Poller] Initialized state from local file');
+  }
+
   async poll() {
     console.log('[Poller] poll() called');
     if (!this.siteUrl) {

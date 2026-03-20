@@ -27,7 +27,7 @@ const logger = require('./src/logger');
 const Poller = require('./src/poller');
 const Watcher = require('./src/watcher');
 const AttendanceHandler = require('./src/attendance-handler');
-const { writeSavedVariables } = require('./src/lua-writer');
+const { writeSavedVariables, readSavedVariables } = require('./src/lua-writer');
 const { isWowRunning } = require('./src/wow-detector');
 
 const ADDON_NAME = 'DI_To_RCL_Import';
@@ -343,6 +343,15 @@ function startPoller() {
   poller.configure(siteUrl, pollInterval);
 
   if (siteUrl) {
+    // Attempt to initialize poller state from existing PRValues.lua
+    const filePath = getAddonFilePath();
+    if (filePath && fs.existsSync(filePath)) {
+      const existing = readSavedVariables(filePath);
+      if (existing) {
+        poller.setInitialData(existing.prData, existing.lastSync);
+      }
+    }
+
     console.log('[Main] Starting poller');
     poller.start();
   } else {

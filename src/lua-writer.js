@@ -34,4 +34,34 @@ async function writeSavedVariables(filePath, prData, lastSync) {
   console.log('[LuaWriter] Wrote', Object.keys(prData).length, 'PR values to', filePath);
 }
 
-module.exports = { writeSavedVariables, generateLua };
+function readSavedVariables(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return null;
+  }
+
+  try {
+    const content = fs.readFileSync(filePath, 'utf8');
+    const prData = {};
+    
+    // Simple regex to match ["key"] = value
+    const regex = /\["([^"]+)"\]\s*=\s*([0-9.]+)/g;
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      prData[match[1]] = parseFloat(match[2]);
+    }
+
+    // Also try to extract last sync
+    let lastSync = null;
+    const syncMatch = content.match(/DI_RCL_LAST_SYNC\s*=\s*"([^"]+)"/);
+    if (syncMatch) {
+      lastSync = syncMatch[1];
+    }
+
+    return { prData, lastSync };
+  } catch (err) {
+    console.error('[LuaWriter] Failed to read SavedVariables:', err);
+    return null;
+  }
+}
+
+module.exports = { writeSavedVariables, generateLua, readSavedVariables };

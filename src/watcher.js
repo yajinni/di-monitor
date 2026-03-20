@@ -251,8 +251,8 @@ class Watcher {
           logger.addEntry('system', 'Roster is empty. Auto-triggering roster sync from WoW Audit...');
           await this.triggerRosterSync();
           
-          logger.addEntry('system', 'Waiting 5 seconds for roster to populate before retry...');
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          logger.addEntry('system', 'Waiting 10 seconds for roster to populate before retry...');
+          await new Promise(resolve => setTimeout(resolve, 10000));
           
           return await this.triggerLootUpload(jsonData, true);
         }
@@ -263,14 +263,18 @@ class Watcher {
     } catch (err) {
       console.error('[Watcher] Upload error:', err);
       const errorMsg = err.response?.data?.error || err.message;
+      
+      if (err.response) {
+        console.log('[Watcher] Error response data:', err.response.data);
+      }
 
       // Handle rosterEmpty error from catch block (if status 400 returns properly)
       if (err.response?.data?.rosterEmpty && !isRetry) {
         logger.addEntry('system', 'Roster is empty. Auto-triggering roster sync from WoW Audit...');
         await this.triggerRosterSync();
         
-        logger.addEntry('system', 'Waiting 5 seconds for roster to populate before retry...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        logger.addEntry('system', 'Waiting 10 seconds for roster to populate before retry...');
+        await new Promise(resolve => setTimeout(resolve, 10000));
         
         return await this.triggerLootUpload(jsonData, true);
       }

@@ -142,38 +142,25 @@ class Watcher {
     logger.addEntry('connection', 'Triggering roster sync from WoW Audit...');
     const url = `${baseUrl}/api/sync-loot-from-wowaudit`;
     
-    console.log(`[Watcher] Triggering sync at: ${url}`);
+    console.log(`[Watcher] Triggering roster sync at: ${url}`);
 
     try {
-      // The API doesn't require an explicit API key in the request because the Cloudflare Worker 
-      // fetches it from its own SQLite DB (env.DB) using 'wowaudit_api_key'
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const response = await axios.post(url, {}, {
+        timeout: 30000 // Roster sync can take a while
       });
 
-      console.log(`[Watcher] API response status: ${res.status}`);
+      console.log(`[Watcher] Roster sync status: ${response.status}`);
 
-      if (!res.ok) {
-        const text = await res.text();
-        console.log(`[Watcher] API Error Text: ${text}`);
-        logger.addEntry('error', `Loot sync failed (${res.status}): ${res.statusText}`);
-        return;
-      }
-
-      const data = await res.json();
-      console.log('[Watcher] Sync success:', data);
-      
-      if (data.success) {
-        logger.addEntry('success', `Loot sync successful: ${data.inserted} items inserted`);
+      if (response.data && response.data.success) {
+        logger.addEntry('success', `Roster sync successful: ${response.data.inserted || 0} characters updated`);
       } else {
-        logger.addEntry('error', `Loot sync returned false success: ${JSON.stringify(data)}`);
+        const error = response.data?.error || 'Unknown error';
+        logger.addEntry('error', `Roster sync failed: ${error}`);
       }
     } catch (err) {
-      console.error('[Watcher] Network error during sync:', err);
-      logger.addEntry('error', `Network error triggering sync: ${err.message}`);
+      console.error('[Watcher] Network error during roster sync:', err);
+      const errorMsg = err.response?.data?.error || err.message;
+      logger.addEntry('error', `Network error triggering roster sync: ${errorMsg}`);
     }
   }
 

@@ -227,11 +227,37 @@ class Watcher {
     }
   }
 
+  async isRosterEmpty() {
+    const baseUrl = this.getNormalizedUrl();
+    if (!baseUrl) return false;
+    try {
+      const response = await axios.get(`${baseUrl}/api/roster`, { timeout: 10000 });
+      const roster = response.data?.roster || [];
+      console.log(`[Watcher] Roster check: ${roster.length} characters found.`);
+      return roster.length === 0;
+    } catch (err) {
+      console.error('[Watcher] Failed to check roster:', err.message);
+      return false; // Assume not empty on error; let the upload fail naturally
+    }
+  }
+
   async triggerLootUpload(jsonData, isRetry = false) {
     const baseUrl = this.getNormalizedUrl();
     if (!baseUrl) {
       logger.addEntry('system', 'Skipping loot upload: No site URL configured.');
       return { success: false, error: 'No site URL configured' };
+    }
+
+    // Pre-check: if roster is empty, sync it first before wasting the upload
+    if (!isRetry) {
+      const empty = await this.isRosterEmpty();
+      if (empty) {
+        logger.addEntry('system', 'Roster is empty. Auto-triggering roster sync from WoW Audit...');
+        await this.triggerRosterSync();
+        logger.addEntry('system', 'Waiting 10 seconds for roster to populate...');
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        logger.addEntry('system', 'Retrying loot upload after roster sync...');
+      }
     }
 
     const url = `${baseUrl}/api/sync-loot-json`;

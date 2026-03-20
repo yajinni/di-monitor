@@ -88,7 +88,8 @@ class Poller {
       
       // If the timestamp hasn't changed, we can exit early!
       if (this.lastKnownTimestamp === tsData.last_updated && tsData.last_updated !== null) {
-          // No changes yet, no need to download the full roster
+          // No changes yet, but the connection is healthy
+          this.notifyStatus('Connected');
           return;
       }
       

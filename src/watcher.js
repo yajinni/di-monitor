@@ -189,11 +189,11 @@ class Watcher {
     }
   }
 
-  async uploadLootJSON(jsonData) {
+  async triggerLootUpload(jsonData) {
     const baseUrl = this.getNormalizedUrl();
     if (!baseUrl) {
       logger.addEntry('system', 'Skipping loot upload: No site URL configured.');
-      return;
+      return { success: false, error: 'No site URL configured' };
     }
 
     const url = `${baseUrl}/api/sync-loot-json`;

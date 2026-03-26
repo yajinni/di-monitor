@@ -149,7 +149,8 @@ class Poller {
         
         if (isManualSync) {
           const syncTime = new Date(lastSync).toLocaleTimeString();
-          let msg = `Manual PR sync signal received (${syncTime})`;
+          const reason = data.last_pr_sync_reason || 'Manual Sync';
+          let msg = `PR sync signal: ${reason} (${syncTime})`;
           if (changes.length === 0) {
             msg += ' (No PR changes detected)';
           }

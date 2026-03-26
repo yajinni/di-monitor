@@ -83,7 +83,9 @@ class AttendanceHandler {
   }
 
   async processFile() {
-    if (!this.filePath || !fs.existsSync(this.filePath)) return;
+    if (!this.filePath || !fs.existsSync(this.filePath)) {
+      return { success: false, error: 'Attendance file not found or not configured.' };
+    }
 
     try {
       const content = fs.readFileSync(this.filePath, 'utf8');
@@ -91,17 +93,22 @@ class AttendanceHandler {
 
       if (attendanceData && attendanceData.length > 0) {
         logger.addEntry('system', `Found ${attendanceData.length} attendance records. Uploading...`);
-        const success = await this.uploadAttendance(attendanceData);
+        const result = await this.uploadAttendance(attendanceData);
         
-        if (success) {
+        if (result.success) {
           this.clearAttendanceInFile(content);
+          return { success: true, message: result.message };
+        } else {
+          return { success: false, error: result.error || 'Upload failed' };
         }
       } else {
         console.log('[AttendanceHandler] No attendance records found in file.');
+        return { success: false, error: 'No attendance records found in file.' };
       }
     } catch (err) {
       console.error('[AttendanceHandler] Error processing file:', err);
       logger.addEntry('error', `Failed to process attendance file: ${err.message}`);
+      return { success: false, error: err.message };
     }
   }
 
@@ -135,7 +142,7 @@ class AttendanceHandler {
 
   async uploadAttendance(data) {
     const baseUrl = this.getNormalizedUrl();
-    if (!baseUrl) return false;
+    if (!baseUrl) return { success: false, error: 'Site URL not configured.' };
 
     const url = `${baseUrl}/api/attendance`;
     console.log(`[AttendanceHandler] Uploading to: ${url}`);
@@ -150,15 +157,16 @@ class AttendanceHandler {
       if (!res.ok) {
         const errText = await res.text();
         logger.addEntry('error', `Attendance upload failed (${res.status}): ${errText}`);
-        return false;
+        return { success: false, error: `Upload failed (${res.status}): ${errText}` };
       }
 
       const result = await res.json();
-      logger.addEntry('success', `Attendance sync successful: ${result.message}`);
-      return true;
+      const message = result.message || 'Data sent successfully';
+      logger.addEntry('success', `Attendance sync successful: ${message}`);
+      return { success: true, message: message };
     } catch (err) {
       logger.addEntry('error', `Network error syncing attendance: ${err.message}`);
-      return false;
+      return { success: false, error: `Network error: ${err.message}` };
     }
   }
 

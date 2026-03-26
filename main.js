@@ -366,6 +366,20 @@ function setupIPC() {
     }
   });
 
+  ipcMain.handle('send-attendance-data', async () => {
+    if (!attendanceHandler) return { success: false, error: 'Attendance handler not initialized' };
+    try {
+      const result = await attendanceHandler.processFile();
+      if (result && result.success) {
+        return { success: true, message: result.message || 'On Time data sent successfully' };
+      } else {
+        return { success: false, error: result?.error || 'Attendance sync failed' };
+      }
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('get-wow-accounts', async (event, wowPath) => {
     if (!wowPath) return [];
     const retailPath = getRetailPath(wowPath);

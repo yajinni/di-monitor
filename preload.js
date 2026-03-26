@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('diMonitor', {
   openLogsFolder: () => ipcRenderer.invoke('open-logs-folder'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   sendLootData: () => ipcRenderer.invoke('send-loot-data'),
+  sendAttendanceData: () => ipcRenderer.invoke('send-attendance-data'),
   getWowAccounts: (wowPath) => ipcRenderer.invoke('get-wow-accounts', wowPath),
   getAccountFiles: (data) => ipcRenderer.invoke('get-account-files', data),
   onLogUpdate: (callback) => {

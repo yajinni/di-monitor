@@ -487,3 +487,37 @@ if (sendLootBtn) {
     }
   });
 }
+
+// Manual On Time Sync Button
+const sendAttendanceBtn = document.getElementById('sendAttendanceBtn');
+if (sendAttendanceBtn) {
+  sendAttendanceBtn.addEventListener('click', async () => {
+    sendAttendanceBtn.disabled = true;
+    sendAttendanceBtn.textContent = 'Sending...';
+    try {
+      const result = await window.diMonitor.sendAttendanceData();
+      if (result.success) {
+        addLogEntry({
+          timestamp: new Date().toLocaleString(),
+          type: 'success',
+          message: `On Time sync: ${result.message}`
+        });
+      } else {
+        addLogEntry({
+          timestamp: new Date().toLocaleString(),
+          type: 'error',
+          message: `On Time sync failed: ${result.error}`
+        });
+      }
+    } catch (e) {
+      addLogEntry({
+        timestamp: new Date().toLocaleTimeString(),
+        type: 'error',
+        message: `On Time sync error: ${e.message}`
+      });
+    } finally {
+      sendAttendanceBtn.disabled = false;
+      sendAttendanceBtn.textContent = 'Send On Time Data';
+    }
+  });
+}

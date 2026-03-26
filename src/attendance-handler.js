@@ -96,7 +96,6 @@ class AttendanceHandler {
         const result = await this.uploadAttendance(attendanceData);
         
         if (result.success) {
-          this.clearAttendanceInFile(content);
           return { success: true, message: result.message };
         } else {
           return { success: false, error: result.error || 'Upload failed' };

@@ -12,6 +12,7 @@ class Watcher {
     this.jsonTimeoutId = null;
     this.debounceMs = 10000; // 10 seconds
     this.isWatching = false;
+    this.isWatchingJson = false;
     this.ignoreNextJsonChange = false;
   }
 
@@ -72,13 +73,16 @@ class Watcher {
     if (!this.jsonPath) return;
 
     if (fs.existsSync(this.jsonPath)) {
-      console.log(`[Watcher] Started watching JSON: ${this.jsonPath}`);
-      fs.watchFile(this.jsonPath, { interval: 1000 }, (curr, prev) => {
-        if (curr.mtime > prev.mtime) {
-          console.log(`[Watcher] JSON file change detected: ${this.jsonPath}`);
-          this.handleJsonChange();
-        }
-      });
+      if (!this.isWatchingJson) {
+        console.log(`[Watcher] Started watching JSON: ${this.jsonPath}`);
+        fs.watchFile(this.jsonPath, { interval: 1000 }, (curr, prev) => {
+          if (curr.mtimeMs > prev.mtimeMs) {
+            console.log(`[Watcher] JSON file change detected: ${this.jsonPath}`);
+            this.handleJsonChange();
+          }
+        });
+        this.isWatchingJson = true;
+      }
     } else {
       console.log(`[Watcher] JSON file not found yet: ${this.jsonPath}`);
       logger.addEntry('system', 'No loot file made yet');
@@ -91,6 +95,7 @@ class Watcher {
       if (this.jsonPath) fs.unwatchFile(this.jsonPath);
       console.log(`[Watcher] Stopped watching files`);
       this.isWatching = false;
+      this.isWatchingJson = false;
     }
     
     if (this.luaTimeoutId) {
@@ -214,9 +219,8 @@ class Watcher {
       fs.writeFileSync(this.jsonPath, JSON.stringify(jsonData, null, 2), 'utf8');
       logger.addEntry('success', `Loot extracted to ${path.basename(this.jsonPath)}`);
       
-      // If we just created the file for the first time, start watching it
-      if (this.isWatching) {
-        fs.unwatchFile(this.jsonPath); // Clear old watch if any
+      // If the watcher is globally active but JSON isn't being watched yet (first extraction)
+      if (this.isWatching && !this.isWatchingJson) {
         this.refreshJsonWatcher();
       }
 

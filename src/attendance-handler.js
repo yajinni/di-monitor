@@ -106,8 +106,8 @@ class AttendanceHandler {
   }
 
   parseAttendance(content) {
-    // Look for DI_RCL_Attendance = { ... }
-    const tableMatch = content.match(/DI_RCL_Attendance\s*=\s*\{([\s\S]*?)\n\}/);
+    // Look for DI_RCL_Attendance = { ... } and use negative lookahead to skip "},"
+    const tableMatch = content.match(/DI_RCL_Attendance\s*=\s*\{([\s\S]*?)\n\}(?!\s*,)/);
     if (!tableMatch) return null;
 
     const tableContent = tableMatch[1];
@@ -166,7 +166,7 @@ class AttendanceHandler {
     try {
       // Replace the table with an empty one
       const newContent = originalContent.replace(
-        /DI_RCL_Attendance\s*=\s*\{[\s\S]*?\n\}/,
+        /DI_RCL_Attendance\s*=\s*\{[\s\S]*?\n\}(?!\s*,)/,
         'DI_RCL_Attendance = {}'
       );
       

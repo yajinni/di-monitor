@@ -125,7 +125,7 @@ class AttendanceHandler {
       if (nameMatch && dateMatch) {
         entries.push({
           name: nameMatch[1],
-          date: dateMatch[2]
+          date: dateMatch[1]
         });
       }
     }

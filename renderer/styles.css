@@ -144,6 +144,7 @@ body {
 .log-error .log-type { color: #ef5350; }
 .log-connection .log-type { color: #ffb74d; }
 .log-sync .log-type { color: #ba68c8; }
+.log-success .log-type { color: #4caf50; }
 
 /* Settings Tab */
 .settings-form {

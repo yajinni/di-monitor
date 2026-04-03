@@ -13,9 +13,15 @@
         <h1>DI Monitor</h1>
         <span id="appVersion" style="font-size: 10px; color: #666;">v0.0.0</span>
       </div>
-      <div class="connection-status" id="connectionStatus">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Not configured</span>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="header-actions" style="display: flex; gap: 8px;">
+          <button id="sendAttendanceBtn" class="primary-btn" style="padding: 6px 12px; font-size: 11px;">Send On Time Data</button>
+          <button id="sendLootBtn" class="primary-btn" style="padding: 6px 12px; font-size: 11px;">Send Loot Data</button>
+        </div>
+        <div class="connection-status" id="connectionStatus">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Not configured</span>
+        </div>
       </div>
     </div>
 
@@ -25,10 +31,6 @@
     </div>
 
     <div class="tab-content active" id="tab-status">
-      <div class="status-actions" style="margin-bottom: 15px; display: flex; justify-content: flex-end; gap: 8px;">
-        <button id="sendAttendanceBtn" class="secondary-btn" style="padding: 8px 16px; font-size: 13px;">Send On Time Data</button>
-        <button id="sendLootBtn" class="primary-btn" style="padding: 8px 16px; font-size: 13px;">Send Loot Data</button>
-      </div>
       <div class="log-container">
         <table class="log-table">
           <thead>

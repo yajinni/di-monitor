@@ -162,7 +162,12 @@ class AttendanceHandler {
       const result = await res.json();
       const message = result.message || 'Data sent successfully';
       logger.addEntry('success', `Attendance sync successful: ${message}`);
-      return { success: true, message: message };
+      return { 
+        success: true, 
+        message: message,
+        present: result.present || [],
+        ep: result.ep || 0
+      };
     } catch (err) {
       logger.addEntry('error', `Network error syncing attendance: ${err.message}`);
       return { success: false, error: `Network error: ${err.message}` };

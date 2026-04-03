@@ -61,6 +61,13 @@ function addLogEntry(entry) {
     tr.addEventListener('mouseout', () => tr.style.opacity = '0.8');
     tr.addEventListener('click', () => showUnmatchedPlayersDialog(entry.metadata.unmatched));
     msgCell.style.textDecoration = 'underline dotted';
+  } else if (entry.metadata && entry.metadata.present) {
+    tr.style.cursor = 'pointer';
+    tr.style.opacity = '0.8';
+    tr.addEventListener('mouseover', () => tr.style.opacity = '1');
+    tr.addEventListener('mouseout', () => tr.style.opacity = '0.8');
+    tr.addEventListener('click', () => showAttendanceDialog(entry.metadata.present, entry.metadata.ep));
+    msgCell.style.textDecoration = 'underline dotted';
   }
 
   tr.innerHTML = `
@@ -268,6 +275,72 @@ function showUnmatchedPlayersDialog(players) {
     margin-top: 20px;
     padding: 10px;
     background: #f9a825;
+    color: #1a1a2e;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+  `;
+  closeBtn.addEventListener('click', () => dialog.remove());
+  content.appendChild(closeBtn);
+
+  dialog.appendChild(content);
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.remove();
+  });
+
+  document.body.appendChild(dialog);
+}
+
+function showAttendanceDialog(players, ep) {
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  `;
+
+  const content = document.createElement('div');
+  content.style.cssText = `
+    background: #16213e;
+    border: 2px solid #4caf50;
+    border-radius: 8px;
+    padding: 20px;
+    width: 450px;
+    max-height: 500px;
+    overflow-y: auto;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+  `;
+
+  let html = '<h3 style="color: #4caf50; margin-top: 0;">Attendance Recorded</h3>';
+  html += `<p style="font-size: 14px; color: #bbb; line-height: 1.4; margin-bottom: 15px;">The following players were marked as <strong>Present</strong> and awarded <span style="color: #4caf50; font-weight: bold;">+${ep} EP</span>:</p>`;
+  html += '<ul style="margin-top: 10px; padding-left: 20px; color: #4caf50; font-weight: 500; line-height: 1.6; list-style-type: none; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 15px;">';
+  
+  // Sort and list names
+  const sortedPlayers = [...players].sort();
+  for (const player of sortedPlayers) {
+    html += `<li>✓ ${player}</li>`;
+  }
+  
+  html += '</ul>';
+  content.innerHTML = html;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.className = 'primary-btn';
+  closeBtn.style.cssText = `
+    margin-top: 20px;
+    padding: 10px;
+    background: #4caf50;
     color: #1a1a2e;
     font-weight: bold;
     border: none;
@@ -500,7 +573,11 @@ if (sendAttendanceBtn) {
         addLogEntry({
           timestamp: new Date().toLocaleString(),
           type: 'success',
-          message: `On Time sync: ${result.message}`
+          message: `On Time sync: ${result.message}`,
+          metadata: { 
+            present: result.present || [],
+            ep: result.ep || 0
+          }
         });
       } else {
         addLogEntry({
